@@ -14,6 +14,7 @@ let appClient: DaoClient;
 describe('Dao', () => {
   let algod: algosdk.Algodv2;
   let sender: algosdk.Account;
+  let other: algosdk.Account;
   const proposal = 'This is a proposal.';
   let registeredASA: bigint;
   beforeEach(fixture.beforeEach);
@@ -25,6 +26,11 @@ describe('Dao', () => {
 
     sender = await getOrCreateKmdWalletAccount({
       name: 'tealscript-dao-sender',
+      fundWith: algos(10),
+    }, algod, kmd);
+
+    other = await getOrCreateKmdWalletAccount({
+      name: 'tealscript-dao-other',
       fundWith: algos(10),
     }, algod, kmd);
 
@@ -124,11 +130,59 @@ describe('Dao', () => {
     expect(votesAfter2.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
   });
 
+  test('deregister', async () => {
+    await appClient.closeOut.closeOutOfApplication(
+      { registeredASA },
+      {
+        sender,
+        sendParams: {
+          fee: microAlgos(2_000),
+        },
+      },
+    );
+
+    const votesAfter = await appClient.getVotes({});
+    expect(votesAfter.return?.valueOf()).toEqual([BigInt(0), BigInt(0)]);
+
+    const registeredAsaCloseTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+      from: sender.addr,
+      to: other.addr,
+      amount: 0,
+      assetIndex: Number(registeredASA),
+      closeRemainderTo: sender.addr,
+      suggestedParams: await algokit.getTransactionParams(undefined, algod),
+    });
+
+    await algokit.sendTransaction({ transaction: registeredAsaCloseTxn, from: sender }, algod);
+
+    const registeredAsaOptInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+      from: sender.addr,
+      to: sender.addr,
+      amount: 0,
+      assetIndex: Number(registeredASA),
+      suggestedParams: await algokit.getTransactionParams(undefined, algod),
+    });
+
+    await algokit.sendTransaction({ transaction: registeredAsaOptInTxn, from: sender }, algod);
+
+    await appClient.optIn.optInToApplication({ registeredASA }, {
+      sender,
+      sendParams: {
+        fee: microAlgos(3_000),
+      },
+    });
+
+    await appClient.vote({ inFavor: false, registeredASA }, { sender });
+
+    const votesAfter2 = await appClient.getVotes({});
+    expect(votesAfter2.return?.valueOf()).toEqual([BigInt(0), BigInt(1)]);
+  });
+
   test('clearState', async () => {
     await appClient.clearState({ sender });
 
     const votesAfter = await appClient.getVotes({});
-    expect(votesAfter.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
+    expect(votesAfter.return?.valueOf()).toEqual([BigInt(0), BigInt(0)]);
 
     await expect(appClient.vote({ inFavor: true, registeredASA }, { sender }))
       .rejects
