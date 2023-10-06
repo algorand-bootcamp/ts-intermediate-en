@@ -89,7 +89,7 @@ describe('Dao', () => {
 
     await algokit.sendTransaction({ from: sender, transaction: registeredAsaOptInTxn }, algod);
 
-    await appClient.register({ registeredASA }, {
+    await appClient.optIn.optInToApplication({ registeredASA }, {
       sender,
       sendParams: {
         fee: microAlgos(3_000),
@@ -116,9 +116,31 @@ describe('Dao', () => {
     const votesAfter = await appClient.getVotes({});
     expect(votesAfter.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
 
-    await appClient.vote({ inFavor: false, registeredASA }, { sender });
+    await expect(appClient.vote({ inFavor: false, registeredASA }, { sender }))
+      .rejects
+      .toThrow();
 
     const votesAfter2 = await appClient.getVotes({});
-    expect(votesAfter2.return?.valueOf()).toEqual([BigInt(1), BigInt(2)]);
+    expect(votesAfter2.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
+  });
+
+  test('clearState', async () => {
+    await appClient.clearState({ sender });
+
+    const votesAfter = await appClient.getVotes({});
+    expect(votesAfter.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
+
+    await expect(appClient.vote({ inFavor: true, registeredASA }, { sender }))
+      .rejects
+      .toThrow();
+
+    await expect(appClient.optIn.optInToApplication({ registeredASA }, {
+      sender,
+      sendParams: {
+        fee: microAlgos(3_000),
+      },
+    }))
+      .rejects
+      .toThrow();
   });
 });
