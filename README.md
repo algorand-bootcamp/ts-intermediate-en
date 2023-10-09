@@ -12,7 +12,7 @@ For example: `git apply steps/201-local-state.patch`
 
 The steps currently availible are:
 
-1. `steps/201-local-state.patch``
+1. `steps/201-local-state.patch`
 
 # Local Devcontainer
 
