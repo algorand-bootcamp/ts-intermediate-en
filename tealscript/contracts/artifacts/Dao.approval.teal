@@ -17,7 +17,7 @@ int 6
 *
 txn OnCompletion
 +
-switch create_NoOp NOT_IMPLEMENTED NOT_IMPLEMENTED NOT_IMPLEMENTED NOT_IMPLEMENTED NOT_IMPLEMENTED call_NoOp
+switch create_NoOp NOT_IMPLEMENTED NOT_IMPLEMENTED NOT_IMPLEMENTED NOT_IMPLEMENTED NOT_IMPLEMENTED call_NoOp call_OptIn
 
 NOT_IMPLEMENTED:
 	err
@@ -36,7 +36,7 @@ abi_route_createApplication:
 createApplication:
 	proto 1 0
 
-	// contracts/dao.algo.ts:14
+	// contracts/dao.algo.ts:16
 	// this.proposal.value = proposal
 	byte "proposal"
 	frame_dig -1 // proposal: bytes
@@ -61,7 +61,7 @@ abi_route_bootstrap:
 bootstrap:
 	proto 1 0
 
-	// contracts/dao.algo.ts:18
+	// contracts/dao.algo.ts:20
 	// verify sender
 	txn Sender
 	txna Applications 0
@@ -70,7 +70,7 @@ bootstrap:
 	==
 	assert
 
-	// contracts/dao.algo.ts:19
+	// contracts/dao.algo.ts:21
 	// assert(!this.registeredAsaId.exists)
 	txna Applications 0
 	byte "registeredAsaId"
@@ -80,7 +80,7 @@ bootstrap:
 	!
 	assert
 
-	// contracts/dao.algo.ts:20
+	// contracts/dao.algo.ts:22
 	// registeredAsa = sendAssetCreation({
 	//       configAssetTotal: 1_000,
 	//       configAssetFreeze: this.app.address,
@@ -89,12 +89,12 @@ bootstrap:
 	int acfg
 	itxn_field TypeEnum
 
-	// contracts/dao.algo.ts:21
+	// contracts/dao.algo.ts:23
 	// configAssetTotal: 1_000
 	int 1_000
 	itxn_field ConfigAssetTotal
 
-	// contracts/dao.algo.ts:22
+	// contracts/dao.algo.ts:24
 	// configAssetFreeze: this.app.address
 	txna Applications 0
 	app_params_get AppAddress
@@ -110,13 +110,13 @@ bootstrap:
 	itxn CreatedAssetID
 	frame_bury -1 // registeredAsa: asset
 
-	// contracts/dao.algo.ts:24
+	// contracts/dao.algo.ts:26
 	// this.registeredAsaId.value = registeredAsa
 	byte "registeredAsaId"
 	frame_dig -1 // registeredAsa: asset
 	app_global_put
 
-	// contracts/dao.algo.ts:25
+	// contracts/dao.algo.ts:27
 	// return registeredAsa;
 	frame_dig -1 // registeredAsa: asset
 	itob
@@ -126,24 +126,24 @@ bootstrap:
 	log
 	retsub
 
-// register(asset)void
+// optInToApplication(asset)void
 //
 // // eslint-disable-next-line no-unused-vars
-abi_route_register:
+abi_route_optInToApplication:
 	// registeredASA: asset
 	txna ApplicationArgs 1
 	btoi
 	txnas Assets
 
-	// execute register(asset)void
-	callsub register
+	// execute optInToApplication(asset)void
+	callsub optInToApplication
 	int 1
 	return
 
-register:
+optInToApplication:
 	proto 1 0
 
-	// contracts/dao.algo.ts:30
+	// contracts/dao.algo.ts:32
 	// assert(this.txn.sender.assetBalance(this.registeredAsaId.value) === 0)
 	txn Sender
 	byte "registeredAsaId"
@@ -154,7 +154,7 @@ register:
 	==
 	assert
 
-	// contracts/dao.algo.ts:31
+	// contracts/dao.algo.ts:33
 	// sendAssetTransfer({
 	//       xferAsset: this.registeredAsaId.value,
 	//       assetReceiver: this.txn.sender,
@@ -164,18 +164,18 @@ register:
 	int axfer
 	itxn_field TypeEnum
 
-	// contracts/dao.algo.ts:32
+	// contracts/dao.algo.ts:34
 	// xferAsset: this.registeredAsaId.value
 	byte "registeredAsaId"
 	app_global_get
 	itxn_field XferAsset
 
-	// contracts/dao.algo.ts:33
+	// contracts/dao.algo.ts:35
 	// assetReceiver: this.txn.sender
 	txn Sender
 	itxn_field AssetReceiver
 
-	// contracts/dao.algo.ts:34
+	// contracts/dao.algo.ts:36
 	// assetAmount: 1
 	int 1
 	itxn_field AssetAmount
@@ -187,7 +187,7 @@ register:
 	// Submit inner transaction
 	itxn_submit
 
-	// contracts/dao.algo.ts:36
+	// contracts/dao.algo.ts:38
 	// sendAssetFreeze({
 	//       freezeAsset: this.registeredAsaId.value,
 	//       freezeAssetAccount: this.txn.sender,
@@ -197,18 +197,18 @@ register:
 	int afrz
 	itxn_field TypeEnum
 
-	// contracts/dao.algo.ts:37
+	// contracts/dao.algo.ts:39
 	// freezeAsset: this.registeredAsaId.value
 	byte "registeredAsaId"
 	app_global_get
 	itxn_field FreezeAsset
 
-	// contracts/dao.algo.ts:38
+	// contracts/dao.algo.ts:40
 	// freezeAssetAccount: this.txn.sender
 	txn Sender
 	itxn_field FreezeAssetAccount
 
-	// contracts/dao.algo.ts:39
+	// contracts/dao.algo.ts:41
 	// freezeAssetFrozen: true
 	int 1
 	itxn_field FreezeAssetFrozen
@@ -243,7 +243,7 @@ abi_route_vote:
 vote:
 	proto 2 0
 
-	// contracts/dao.algo.ts:45
+	// contracts/dao.algo.ts:47
 	// assert(this.txn.sender.assetBalance(this.registeredAsaId.value) === 1)
 	txn Sender
 	byte "registeredAsaId"
@@ -254,7 +254,29 @@ vote:
 	==
 	assert
 
-	// contracts/dao.algo.ts:46
+	// contracts/dao.algo.ts:48
+	// assert(!this.inFavor(this.txn.sender).exists)
+	txn Sender
+	txna Applications 0
+	byte "inFavor"
+	app_local_get_ex
+	swap
+	pop
+	!
+	assert
+
+	// contracts/dao.algo.ts:49
+	// this.inFavor(this.txn.sender).value = inFavor
+	txn Sender
+	byte "inFavor"
+	frame_dig -1 // inFavor: bool
+	byte 0x00
+	int 0
+	uncover 2
+	setbit
+	app_local_put
+
+	// contracts/dao.algo.ts:51
 	// this.votesTotal.value = this.votesTotal.value + 1
 	byte "votesTotal"
 	byte "votesTotal"
@@ -264,13 +286,13 @@ vote:
 	app_global_put
 
 	// if0_condition
-	// contracts/dao.algo.ts:47
+	// contracts/dao.algo.ts:52
 	// inFavor
 	frame_dig -1 // inFavor: bool
 	bz if0_end
 
 	// if0_consequent
-	// contracts/dao.algo.ts:48
+	// contracts/dao.algo.ts:53
 	// this.votesInFavor.value = this.votesInFavor.value + 1
 	byte "votesInFavor"
 	byte "votesInFavor"
@@ -292,7 +314,7 @@ abi_route_getProposal:
 getProposal:
 	proto 0 0
 
-	// contracts/dao.algo.ts:53
+	// contracts/dao.algo.ts:58
 	// return this.proposal.value;
 	byte "proposal"
 	app_global_get
@@ -319,7 +341,7 @@ abi_route_getRegisteredASA:
 getRegisteredASA:
 	proto 0 0
 
-	// contracts/dao.algo.ts:57
+	// contracts/dao.algo.ts:62
 	// return this.registeredAsaId.value;
 	byte "registeredAsaId"
 	app_global_get
@@ -340,7 +362,7 @@ abi_route_getVotes:
 getVotes:
 	proto 0 0
 
-	// contracts/dao.algo.ts:61
+	// contracts/dao.algo.ts:66
 	// return [this.votesInFavor.value, this.votesTotal.value];
 	byte "votesInFavor"
 	app_global_get
@@ -363,11 +385,16 @@ create_NoOp:
 
 call_NoOp:
 	method "bootstrap()uint64"
-	method "register(asset)void"
 	method "vote(bool,asset)void"
 	method "getProposal()string"
 	method "getRegisteredASA()uint64"
 	method "getVotes()(uint64,uint64)"
 	txna ApplicationArgs 0
-	match abi_route_bootstrap abi_route_register abi_route_vote abi_route_getProposal abi_route_getRegisteredASA abi_route_getVotes
+	match abi_route_bootstrap abi_route_vote abi_route_getProposal abi_route_getRegisteredASA abi_route_getVotes
+	err
+
+call_OptIn:
+	method "optInToApplication(asset)void"
+	txna ApplicationArgs 0
+	match abi_route_optInToApplication
 	err

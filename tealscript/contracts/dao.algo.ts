@@ -10,6 +10,8 @@ class Dao extends Contract {
 
   votesInFavor = GlobalStateKey<number>();
 
+  inFavor = LocalStateKey<boolean>();
+
   createApplication(proposal: string): void {
     this.proposal.value = proposal;
   }
@@ -26,7 +28,7 @@ class Dao extends Contract {
   }
 
   // eslint-disable-next-line no-unused-vars
-  register(registeredASA: Asset): void {
+  optInToApplication(registeredASA: Asset): void {
     assert(this.txn.sender.assetBalance(this.registeredAsaId.value) === 0);
     sendAssetTransfer({
       xferAsset: this.registeredAsaId.value,
@@ -43,6 +45,9 @@ class Dao extends Contract {
   // eslint-disable-next-line no-unused-vars
   vote(inFavor: boolean, registeredASA: Asset): void {
     assert(this.txn.sender.assetBalance(this.registeredAsaId.value) === 1);
+    assert(!this.inFavor(this.txn.sender).exists);
+    this.inFavor(this.txn.sender).value = inFavor;
+
     this.votesTotal.value = this.votesTotal.value + 1;
     if (inFavor) {
       this.votesInFavor.value = this.votesInFavor.value + 1;

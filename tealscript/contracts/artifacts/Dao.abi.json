@@ -27,7 +27,7 @@
       }
     },
     {
-      "name": "register",
+      "name": "optInToApplication",
       "args": [
         {
           "name": "registeredASA",
