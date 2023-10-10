@@ -20,4 +20,4 @@ If you wish to clone the repo locally but still use a devcontainer, simply repla
 
 
 ## Video Recordings
-- Episode #1
+- Ep.1 [Additional state storage options for the AVM](https://youtu.be/ZCt1syBK8Jc)
