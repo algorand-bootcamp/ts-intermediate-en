@@ -6,51 +6,54 @@ import algosdk from 'algosdk'
 import * as algokit from '@algorandfoundation/algokit-utils'
 
 /* Example usage
-<DaoRegister
+<DaoCloseOutOfApplication
   buttonClass="btn m-2"
   buttonLoadingNode={<span className="loading loading-spinner" />}
-  buttonNode="Call register"
+  buttonNode="Call closeOutOfApplication"
   typedClient={typedClient}
   registeredASA={registeredASA}
 />
 */
-type DaoRegisterArgs = Dao['methods']['optInToApplication(asset)void']['argsObj']
+type DaoCloseOutOfApplicationArgs = Dao['methods']['optInToApplication(asset)void']['argsObj']
 
 type Props = {
   buttonClass: string
   buttonLoadingNode?: ReactNode
   buttonNode: ReactNode
   typedClient: DaoClient
-  registeredASA: DaoRegisterArgs['registeredASA']
+  registeredASA: DaoCloseOutOfApplicationArgs['registeredASA']
   algodClient: algosdk.Algodv2
   setState: () => Promise<void>
 }
 
-const DaoRegister = (props: Props) => {
+const DaoCloseOutOfApplication = (props: Props) => {
   const [loading, setLoading] = useState<boolean>(false)
   const { activeAddress, signer } = useWallet()
   const sender = { signer, addr: activeAddress! }
 
   const callMethod = async () => {
     setLoading(true)
-    console.log(`Calling register`)
+    console.log(`Calling closeOutOfApplication`)
 
-    const registeredAsaOptInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-      from: sender.addr,
-      to: sender.addr,
-      amount: 0,
-      suggestedParams: await algokit.getTransactionParams(undefined, props.algodClient),
-      assetIndex: Number(props.registeredASA),
-    })
-
-    await algokit.sendTransaction({ from: sender, transaction: registeredAsaOptInTxn }, props.algodClient)
-
-    await props.typedClient.optIn.optInToApplication(
+    await props.typedClient.closeOut.closeOutOfApplication(
       {
         registeredASA: props.registeredASA,
       },
       { sender, sendParams: { fee: algokit.microAlgos(3_000) } },
     )
+
+    const { appAddress } = await props.typedClient.appClient.getAppReference()
+
+    const registeredAsaCloseTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+      from: sender.addr,
+      to: appAddress,
+      closeRemainderTo: appAddress,
+      amount: 0,
+      suggestedParams: await algokit.getTransactionParams(undefined, props.algodClient),
+      assetIndex: Number(props.registeredASA),
+    })
+
+    await algokit.sendTransaction({ from: sender, transaction: registeredAsaCloseTxn }, props.algodClient)
 
     await props.setState()
     setLoading(false)
@@ -63,4 +66,4 @@ const DaoRegister = (props: Props) => {
   )
 }
 
-export default DaoRegister
+export default DaoCloseOutOfApplication
