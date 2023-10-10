@@ -22,6 +22,7 @@ class Dao extends Contract {
     const registeredAsa = sendAssetCreation({
       configAssetTotal: 1_000,
       configAssetFreeze: this.app.address,
+      configAssetClawback: this.app.address,
     });
     this.registeredAsaId.value = registeredAsa;
     return registeredAsa;
@@ -40,6 +41,31 @@ class Dao extends Contract {
       freezeAssetAccount: this.txn.sender,
       freezeAssetFrozen: true,
     });
+  }
+
+  private forgetVote(): void {
+    if (this.inFavor(this.txn.sender).exists) {
+      this.votesTotal.value = this.votesTotal.value - 1;
+      if (this.inFavor(this.txn.sender).value) {
+        this.votesInFavor.value = this.votesInFavor.value - 1;
+      }
+    }
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  closeOutOfApplication(registeredASA: Asset): void {
+    this.forgetVote();
+
+    sendAssetTransfer({
+      xferAsset: this.registeredAsaId.value,
+      assetSender: this.txn.sender,
+      assetReceiver: this.app.address,
+      assetAmount: 1,
+    });
+  }
+
+  clearState(): void {
+    this.forgetVote();
   }
 
   // eslint-disable-next-line no-unused-vars

@@ -124,11 +124,60 @@ describe('Dao', () => {
     expect(votesAfter2.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
   });
 
+  test('deregister', async () => {
+    await appClient.closeOut.closeOutOfApplication(
+      { registeredASA },
+      { sender, sendParams: { fee: algokit.microAlgos(2_000) } },
+    );
+
+    const votesAfter = await appClient.getVotes({});
+    expect(votesAfter.return?.valueOf()).toEqual([BigInt(0), BigInt(0)]);
+
+    await expect(appClient.vote({ inFavor: true, registeredASA }, { sender }))
+      .rejects
+      .toThrow();
+
+    const { appAddress } = await appClient.appClient.getAppReference();
+
+    const registeredAsaCloseTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+      from: sender.addr,
+      to: appAddress,
+      closeRemainderTo: appAddress,
+      amount: 0,
+      assetIndex: Number(registeredASA),
+      suggestedParams: await algokit.getTransactionParams(undefined, algod),
+    });
+
+    await algokit.sendTransaction({ transaction: registeredAsaCloseTxn, from: sender }, algod);
+
+    const registeredAsaOptInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject(
+      {
+        from: sender.addr,
+        to: sender.addr,
+        amount: 0,
+        suggestedParams: await algokit.getTransactionParams(undefined, algod),
+        assetIndex: Number(registeredASA),
+      },
+    );
+
+    await algokit.sendTransaction({ transaction: registeredAsaOptInTxn, from: sender }, algod);
+
+    await appClient.optIn.optInToApplication(
+      { registeredASA },
+      { sender, sendParams: { fee: algokit.microAlgos(3_000) } },
+    );
+
+    await appClient.vote({ inFavor: true, registeredASA }, { sender });
+
+    const votesAfter2 = await appClient.getVotes({});
+    expect(votesAfter2.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
+  });
+
   test('clearState', async () => {
     await appClient.clearState({ sender });
 
     const votesAfter = await appClient.getVotes({});
-    expect(votesAfter.return?.valueOf()).toEqual([BigInt(1), BigInt(1)]);
+    expect(votesAfter.return?.valueOf()).toEqual([BigInt(0), BigInt(0)]);
 
     await expect(appClient.vote({ inFavor: true, registeredASA }, { sender }))
       .rejects
