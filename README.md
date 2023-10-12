@@ -23,5 +23,5 @@ If you wish to clone the repo locally but still use a devcontainer, simply repla
 - Ep.1 [Additional state storage options for the AVM](https://youtu.be/ZCt1syBK8Jc)
 - Ep.2 [Refactoring local storage opt-out & clawback](https://youtu.be/ASLpCg0GPm0)
 - Ep.3 [Implementing box storage for DAO contract](https://youtu.be/E9dUCwTaBBE)
-- Ep.4 Adding time constraints & finalizing React front-end
+- Ep.4 [Adding time constraints to the DAO contract](https://youtu.be/toIz6Ocl4dY)
 
