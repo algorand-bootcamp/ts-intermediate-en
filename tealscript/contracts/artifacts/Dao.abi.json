@@ -9,6 +9,11 @@
           "name": "proposal",
           "type": "string",
           "desc": ""
+        },
+        {
+          "name": "length",
+          "type": "uint64",
+          "desc": ""
         }
       ],
       "desc": "",
@@ -42,8 +47,28 @@
       }
     },
     {
+      "name": "deregister",
+      "args": [
+        {
+          "name": "registeredASA",
+          "type": "asset",
+          "desc": ""
+        }
+      ],
+      "desc": "",
+      "returns": {
+        "type": "void",
+        "desc": ""
+      }
+    },
+    {
       "name": "vote",
       "args": [
+        {
+          "name": "boxMBRPayment",
+          "type": "pay",
+          "desc": ""
+        },
         {
           "name": "inFavor",
           "type": "bool",

@@ -6,54 +6,55 @@ import algosdk from 'algosdk'
 import * as algokit from '@algorandfoundation/algokit-utils'
 
 /* Example usage
-<DaoVote
+<DaoCloseOutOfApplication
   buttonClass="btn m-2"
   buttonLoadingNode={<span className="loading loading-spinner" />}
-  buttonNode="Call vote"
+  buttonNode="Call closeOutOfApplication"
   typedClient={typedClient}
-  inFavor={inFavor}
   registeredASA={registeredASA}
 />
 */
-type DaoVoteArgs = Dao['methods']['vote(pay,bool,asset)void']['argsObj']
+type DaoDeregister = Dao['methods']['deregister(asset)void']['argsObj']
 
 type Props = {
   buttonClass: string
   buttonLoadingNode?: ReactNode
   buttonNode: ReactNode
   typedClient: DaoClient
-  inFavor: DaoVoteArgs['inFavor']
-  registeredASA: DaoVoteArgs['registeredASA']
-  setState: () => Promise<void>
+  registeredASA: DaoDeregister['registeredASA']
   algodClient: algosdk.Algodv2
+  setState: () => Promise<void>
 }
 
-const DaoVote = (props: Props) => {
+const DaoDeregister = (props: Props) => {
   const [loading, setLoading] = useState<boolean>(false)
   const { activeAddress, signer } = useWallet()
   const sender = { signer, addr: activeAddress! }
 
   const callMethod = async () => {
     setLoading(true)
-    console.log(`Calling vote`)
+    console.log(`Calling deregister`)
+
+    await props.typedClient.deregister(
+      {
+        registeredASA: props.registeredASA,
+      },
+      { sender, sendParams: { fee: algokit.microAlgos(3_000) }, boxes: [algosdk.decodeAddress(sender.addr).publicKey] },
+    )
 
     const { appAddress } = await props.typedClient.appClient.getAppReference()
 
-    const boxMBRPayment = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+    const registeredAsaCloseTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
       from: sender.addr,
       to: appAddress,
-      amount: 15_700,
+      closeRemainderTo: appAddress,
+      amount: 0,
       suggestedParams: await algokit.getTransactionParams(undefined, props.algodClient),
+      assetIndex: Number(props.registeredASA),
     })
 
-    await props.typedClient.vote(
-      {
-        boxMBRPayment,
-        inFavor: props.inFavor,
-        registeredASA: props.registeredASA,
-      },
-      { sender, boxes: [algosdk.decodeAddress(sender.addr).publicKey] },
-    )
+    await algokit.sendTransaction({ from: sender, transaction: registeredAsaCloseTxn }, props.algodClient)
+
     await props.setState()
     setLoading(false)
   }
@@ -65,4 +66,4 @@ const DaoVote = (props: Props) => {
   )
 }
 
-export default DaoVote
+export default DaoDeregister

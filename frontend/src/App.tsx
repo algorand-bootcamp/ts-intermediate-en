@@ -12,6 +12,7 @@ import * as algokit from '@algorandfoundation/algokit-utils'
 import DaoCreateApplication from './components/DaoCreateApplication'
 import DaoRegister from './components/DaoRegister'
 import DaoVote from './components/DaoVote'
+import DaoDeregister from './components/DaoDeregister'
 
 let providersArray: ProvidersArray
 if (import.meta.env.VITE_ALGOD_NETWORK === '') {
@@ -47,6 +48,7 @@ export default function App() {
   const [votesTotal, setVotesTotal] = useState<number>(0)
   const [votesInFavor, setVotesInFavor] = useState<number>(0)
   const [registered, setRegistered] = useState<boolean>(false)
+  const [voted, setVoted] = useState<boolean>(false)
 
   const resetState = () => {
     setRegisteredASA(0)
@@ -71,6 +73,14 @@ export default function App() {
       } catch (e) {
         console.warn(e)
         setRegistered(false)
+      }
+
+      try {
+        const inFavor = await typedClient.appClient.getBoxValue(algosdk.decodeAddress(activeAddress!).publicKey)
+        setVoted(inFavor !== undefined)
+      } catch (e) {
+        setVoted(false)
+        console.warn(e)
       }
     } catch (e) {
       console.warn(e)
@@ -183,7 +193,7 @@ export default function App() {
                   />
                 )}
 
-                {activeAddress && appID !== 0 && registeredASA !== 0 && registered && (
+                {activeAddress && appID !== 0 && registeredASA !== 0 && registered && !voted && (
                   <div>
                     <DaoVote
                       buttonClass="btn m-2"
@@ -193,6 +203,7 @@ export default function App() {
                       inFavor={false}
                       registeredASA={registeredASA}
                       setState={setState}
+                      algodClient={algodClient}
                     />
                     <DaoVote
                       buttonClass="btn m-2"
@@ -202,8 +213,21 @@ export default function App() {
                       inFavor={true}
                       registeredASA={registeredASA}
                       setState={setState}
+                      algodClient={algodClient}
                     />
                   </div>
+                )}
+
+                {activeAddress && appID !== 0 && registeredASA !== 0 && registered && (
+                  <DaoDeregister
+                    buttonClass="btn m-2"
+                    buttonLoadingNode={<span className="loading loading-spinner" />}
+                    buttonNode="Opt Out"
+                    typedClient={typedClient}
+                    registeredASA={registeredASA}
+                    algodClient={algodClient}
+                    setState={setState}
+                  />
                 )}
               </div>
 
